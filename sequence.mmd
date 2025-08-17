@@ -1,11 +1,45 @@
 ```mermaid
-sequenceDiagram
-    participant Caméra
-    participant Script
-    participant API
+%%{init: {'theme': 'neutral', 'fontFamily': 'Arial', 'gantt': {'barHeight': 20}}}%%
+useCaseDiagram
+    %% Acteurs
+    actor Agent as "Agent de sécurité"
+    actor SystèmeAPI as "Système API"
+    actor Caméra as "Caméra IP"
     
-    Caméra->>Script: Flux vidéo
-    Script->>API: Requête plaque
-    API-->>Script: Réponse JSON
-    Script->>Caméra: Signal traitement
+    %% Système principal
+    rectangle Système {
+        %% Cas d'utilisation principaux
+        (Détecter plaques) as UC1
+        (Lire plaque) as UC2
+        (Vérifier infractions) as UC3
+        (Gérer alertes) as UC4
+        (Générer rapport) as UC5
+        
+        %% Sous-fonctionnalités
+        (Configurer sensibilité) as UC6
+        (Archiver images) as UC7
+    }
+    
+    %% Relations acteurs-système
+    Agent --> UC1
+    Agent --> UC5
+    Agent --> UC6
+    
+    Caméra --> UC1 : "Fournit flux vidéo"
+    
+    %% Relations entre cas d'utilisation
+    UC1 --> UC2 : "Si plaque détectée"
+    UC2 --> UC3 : "Texte extrait"
+    UC3 --> SystèmeAPI : "Requête"
+    SystèmeAPI --> UC3 : "Réponse"
+    UC3 --> UC4 : "Si infraction"
+    
+    %% Extension pour scénarios spéciaux
+    UC3 .-> (Corriger format) : include
+    UC4 .-> (Notifier superviseur) : extend
+    
+    %% Notes explicatives
+    note right of UC1: Utilise YOLOv8/DETR\npour la détection
+    note left of SystèmeAPI: Communication via\nREST/JSON
+    note bottom of Agent: Peut être un\nopérateur humain\nou un système automatisé
 ```
