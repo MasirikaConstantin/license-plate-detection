@@ -1,0 +1,11 @@
+```mermaid
+sequenceDiagram
+    participant Caméra
+    participant Script
+    participant API
+    
+    Caméra->>Script: Flux vidéo
+    Script->>API: Requête plaque
+    API-->>Script: Réponse JSON
+    Script->>Caméra: Signal traitement
+```

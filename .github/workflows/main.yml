@@ -1,0 +1,22 @@
+name: Plate Detection CI
+
+on: [push, workflow_dispatch]
+
+jobs:
+  run-detection:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        sudo apt-get install libgl1
+    - name: Run detection
+      run: |
+        python src/main.py --input samples/plaque.jpg
+      env:
+        API_KEY: ${{ secrets.API_KEY }}
