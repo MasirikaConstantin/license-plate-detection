@@ -1,45 +1,66 @@
 ```mermaid
-%%{init: {'theme': 'neutral', 'fontFamily': 'Arial', 'gantt': {'barHeight': 20}}}%%
-useCaseDiagram
-    %% Acteurs
-    actor Agent as "Agent de sécurité"
-    actor SystèmeAPI as "Système API"
-    actor Caméra as "Caméra IP"
+sequenceDiagram
+    participant Caméra as "Caméra de surveillance"
+    participant ScriptPython as "Script Python"
+    participant Pretraitement as "Module de prétraitement"
+    participant DETR as "Modèle DETR"
+    participant EasyOCR as "Module EasyOCR"
+    participant PostTraitement as "Post-traitement"
+    participant BaseDonnees as "Base de données"
+    participant Interface as "Interface Utilisateur"
+
+    Note over Caméra,Interface: Flux complet de détection de plaques
+    Caméra ->> ScriptPython: Flux vidéo/images brutes
+    activate ScriptPython
     
-    %% Système principal
-    rectangle Système {
-        %% Cas d'utilisation principaux
-        (Détecter plaques) as UC1
-        (Lire plaque) as UC2
-        (Vérifier infractions) as UC3
-        (Gérer alertes) as UC4
-        (Générer rapport) as UC5
+    ScriptPython ->> Pretraitement: Image brute
+    activate Pretraitement
+    Pretraitement ->> Pretraitement: 1. Conversion niveaux de gris
+    Pretraitement ->> Pretraitement: 2. Filtrage du bruit
+    Pretraitement ->> Pretraitement: 3. Normalisation contraste
+    Pretraitement ->> Pretraitement: 4. Correction géométrique
+    Pretraitement -->> ScriptPython: Image prétraitée
+    deactivate Pretraitement
+    
+    ScriptPython ->> DETR: Image prétraitée
+    activate DETR
+    DETR ->> DETR: Détection objets (YOLOv8/DETR)
+    DETR -->> ScriptPython: Boîtes englobantes + scores
+    deactivate DETR
+    
+    alt Aucune plaque détectée
+        ScriptPython ->> Interface: Notification "Aucune plaque"
+    else Plaque détectée
+        ScriptPython ->> EasyOCR: ROI plaque
+        activate EasyOCR
+        EasyOCR ->> EasyOCR: Reconnaissance caractères
+        EasyOCR -->> ScriptPython: Texte brut (ex: "AB-123-CD")
+        deactivate EasyOCR
         
-        %% Sous-fonctionnalités
-        (Configurer sensibilité) as UC6
-        (Archiver images) as UC7
-    }
-    
-    %% Relations acteurs-système
-    Agent --> UC1
-    Agent --> UC5
-    Agent --> UC6
-    
-    Caméra --> UC1 : "Fournit flux vidéo"
-    
-    %% Relations entre cas d'utilisation
-    UC1 --> UC2 : "Si plaque détectée"
-    UC2 --> UC3 : "Texte extrait"
-    UC3 --> SystèmeAPI : "Requête"
-    SystèmeAPI --> UC3 : "Réponse"
-    UC3 --> UC4 : "Si infraction"
-    
-    %% Extension pour scénarios spéciaux
-    UC3 .-> (Corriger format) : include
-    UC4 .-> (Notifier superviseur) : extend
-    
-    %% Notes explicatives
-    note right of UC1: Utilise YOLOv8/DETR\npour la détection
-    note left of SystèmeAPI: Communication via\nREST/JSON
-    note bottom of Agent: Peut être un\nopérateur humain\nou un système automatisé
+        ScriptPython ->> PostTraitement: Texte brut
+        activate PostTraitement
+        PostTraitement ->> PostTraitement: 1. Validation format
+        PostTraitement ->> PostTraitement: 2. Corrections (O→0, I→1)
+        PostTraitement ->> PostTraitement: 3. Normalisation
+        PostTraitement -->> ScriptPython: Texte validé (ex: "AB-123-CD")
+        deactivate PostTraitement
+        
+        ScriptPython ->> BaseDonnees: Requête plaque
+        activate BaseDonnees
+        BaseDonnees ->> BaseDonnees: Recherche infos véhicule
+        alt Plaque inconnue
+            BaseDonnees -->> ScriptPython: "Plaque non enregistrée"
+        else Plaque trouvée
+            BaseDonnees -->> ScriptPython: Données complètes
+        end
+        deactivate BaseDonnees
+        
+        ScriptPython ->> Interface: Affichage résultats
+        activate Interface
+        Interface ->> Interface: 1. Visualisation plaque
+        Interface ->> Interface: 2. Fiche véhicule
+        Interface ->> Interface: 3. Historique infractions
+        deactivate Interface
+    end
+    deactivate ScriptPython
 ```
